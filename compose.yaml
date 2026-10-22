@@ -1,0 +1,55 @@
+services:
+  database:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: learning_lab
+      POSTGRES_USER: learning_lab
+      POSTGRES_PASSWORD: local-dev-password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U learning_lab -d learning_lab"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./apps/api
+    restart: unless-stopped
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://learning_lab:local-dev-password@database:5432/learning_lab
+    ports:
+      - "3001:3001"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3001/health').then((response) => process.exit(response.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    build:
+      context: ./apps/web
+    restart: unless-stopped
+    environment:
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

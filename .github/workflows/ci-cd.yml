@@ -1,0 +1,83 @@
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/web/package-lock.json
+
+      - name: Install and test API
+        working-directory: apps/api
+        run: |
+          npm ci
+          npm run build
+          npm test
+
+      - name: Install and build frontend
+        working-directory: apps/web
+        run: |
+          npm ci
+          npm run lint
+          npm run build
+
+      - name: Build Docker images
+        run: docker compose build
+
+  deploy:
+    name: Deploy to EC2
+    needs: check
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -eu
+            attempt=0
+            until docker info >/dev/null 2>&1; do
+              attempt=$((attempt + 1))
+              if [ "$attempt" -ge 60 ]; then
+                echo "Docker did not become ready on the EC2 instance." >&2
+                exit 1
+              fi
+              sleep 5
+            done
+            APP_DIR=/home/ubuntu/cicd-learning-lab
+            REPOSITORY_URL="https://github.com/${{ github.repository }}.git"
+            REF_NAME="${{ github.ref_name }}"
+            if [ -d "$APP_DIR/.git" ]; then
+              cd "$APP_DIR"
+              git fetch origin "$REF_NAME"
+              git checkout -B "$REF_NAME" "origin/$REF_NAME"
+            else
+              git clone --branch "$REF_NAME" "$REPOSITORY_URL" "$APP_DIR"
+            fi
+            cd "$APP_DIR"
+            docker compose up --build --detach --remove-orphans

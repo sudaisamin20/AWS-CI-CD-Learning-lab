@@ -1,0 +1,90 @@
+.page {
+  display: grid;
+  justify-items: center;
+  min-height: 100vh;
+  padding: 32px;
+}
+
+.main {
+  width: min(100%, 760px);
+  align-self: center;
+  padding: 56px;
+  border: 1px solid #2a3a50;
+  border-radius: 24px;
+  background: #172337;
+}
+
+.main h1 {
+  margin: 12px 0;
+  font-size: clamp(2.4rem, 8vw, 4.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.05em;
+}
+
+.eyebrow {
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+}
+
+.description {
+  max-width: 560px;
+  color: var(--muted);
+  font-size: 1.15rem;
+  line-height: 1.7;
+}
+
+.status {
+  display: grid;
+  gap: 8px;
+  margin: 32px 0;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: #101827;
+}
+
+.statusLabel {
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.status strong {
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+
+.stack {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stack span {
+  padding: 8px 12px;
+  border: 1px solid #34445b;
+  border-radius: 999px;
+  color: #d6deea;
+  font-size: 0.85rem;
+}
+
+.hint {
+  margin-top: 28px;
+  color: var(--muted);
+}
+
+.hint code {
+  color: var(--accent);
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 16px;
+  }
+
+  .main {
+    padding: 30px 22px;
+  }
+}
